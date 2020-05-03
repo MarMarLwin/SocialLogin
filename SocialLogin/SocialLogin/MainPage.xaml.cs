@@ -72,5 +72,52 @@ namespace SocialLogin
         {
             DisplayAlert("Google Authentication Error", e.Message, "OK");
         }
+
+        private void Button_Clicked_1(object sender, EventArgs e)
+        {
+            var authenticator = new OAuth2Authenticator
+                        (
+                          "229968058337796",
+                          "profile",
+                           new System.Uri("https://www.facebook.com/dialog/oauth"),
+                          //new System.Uri("https://www.google.com")
+                         new System.Uri("https://www.systematic-solution.com")
+                         );
+
+            authenticator.AllowCancel = true;
+
+            var presenter = new Xamarin.Auth.Presenters.OAuthLoginPresenter();
+
+            presenter.Login(authenticator);
+
+            authenticator.Completed += async (senders, obj) =>
+            {
+                if (obj.IsAuthenticated)
+                {
+                    var clientData = new HttpClient();
+
+                    //call google api to fetch logged in user profile info 
+                    var resData = await clientData.GetAsync("https://graph.facebook.com/v2.7/me/?fields=name,picture,work,website,religion,location,locale,link,cover,age_range,birthday,devices,email,first_name,last_name,gender,hometown,is_verified,languages&access_token=" + obj.Account.Properties["access_token"]);
+                    var jsonData = await resData.Content.ReadAsStringAsync();
+
+                    // deserlize the jsondata and intilize in GoogleAuthClass
+                    FacebookAuthClass googleObject = JsonConvert.DeserializeObject<FacebookAuthClass>(jsonData);
+
+                    //you can access following property after login
+                    string email = googleObject.email;
+                    string photo = googleObject.picture;
+                    string name = googleObject.name;
+
+                    lblemail.Text = email;
+                    lblName.Text = name;
+                }
+                else
+                {
+                    //Authentication fail
+                    // write the code to handle when auth failed
+                }
+            };
+            authenticator.Error += onAuthError;
+        }
     }
 }
